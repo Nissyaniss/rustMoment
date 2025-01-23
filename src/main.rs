@@ -1,8 +1,9 @@
-use std::collections::BTreeMap;
+use anyhow::Result;
+use std::collections::{BTreeMap, BTreeSet};
 use tokio::io::{self, AsyncBufReadExt, BufReader};
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() -> Result<()> {
 	let mut tableau_candidats = BTreeMap::new();
 
 	tableau_candidats.insert("NixOS".to_string(), 0u32);
@@ -11,7 +12,7 @@ async fn main() -> anyhow::Result<()> {
 	tableau_candidats.insert("Nul".to_string(), 0u32);
 	tableau_candidats.insert("Blanc".to_string(), 0u32);
 
-	let mut tableau_votants = BTreeMap::new();
+	let mut tableau_votants = BTreeSet::new();
 
 	loop {
 		let mut lines = BufReader::new(io::stdin()).lines();
@@ -29,7 +30,7 @@ async fn main() -> anyhow::Result<()> {
 						&tableau_votants,
 					);
 					if !res.0.is_empty() && !res.1.is_empty() {
-						tableau_votants.insert(res.0, true);
+						tableau_votants.insert(res.0);
 						if let Some(candidat) = tableau_candidats.get_mut(&res.1) {
 							*candidat += 1;
 						}
@@ -37,7 +38,7 @@ async fn main() -> anyhow::Result<()> {
 				}
 				"votants" => afficher_votants(tableau_votants.clone()),
 				"scores" => afficher_score(tableau_candidats.clone()),
-				_ => println!("Command invalide"),
+				_ => println!("Commande invalide"),
 			}
 		}
 	}
@@ -47,11 +48,11 @@ fn voter(
 	deuxieme_mot: &str,
 	troisieme_mot: &str,
 	candidats: &BTreeMap<String, u32>,
-	votants: &BTreeMap<String, bool>,
+	votants: &BTreeSet<String>,
 ) -> (String, String, u32) {
 	if deuxieme_mot.is_empty() {
 		println!("Erreur nom de votant manquant :\nvoter <nom_votant> <nom_candidat>.");
-	} else if votants.contains_key(deuxieme_mot) {
+	} else if votants.contains(deuxieme_mot) {
 		println!("{deuxieme_mot} a deja vote.");
 	} else if troisieme_mot.is_empty() {
 		println!("{deuxieme_mot} a voter blanc.");
@@ -73,9 +74,9 @@ fn afficher_score(scores: BTreeMap<String, u32>) {
 	}
 }
 
-fn afficher_votants(votants: BTreeMap<String, bool>) {
+fn afficher_votants(votants: BTreeSet<String>) {
 	println!("\nVoici les votants\n");
-	for (votant, _) in votants {
+	for votant in votants {
 		println!("{votant}");
 	}
 }
