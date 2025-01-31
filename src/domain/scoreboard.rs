@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use super::generic_domains::{Candidate, Score};
 
+#[derive(PartialEq, Eq, Debug)]
 pub struct Scoreboard {
 	pub scores: BTreeMap<Candidate, Score>,
 	pub blank_score: Score,
@@ -12,7 +13,7 @@ impl Scoreboard {
 	pub fn new(candidates: Vec<Candidate>) -> Self {
 		let mut scores: BTreeMap<Candidate, Score> = BTreeMap::default();
 		for candidate in candidates {
-			scores.insert(candidate, Score(0));
+			scores.insert(candidate, Score::default());
 		}
 
 		Self {

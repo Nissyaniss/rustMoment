@@ -1,18 +1,33 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
-use crate::configuration::Configuration;
+use crate::{
+	configuration::Configuration,
+	domain::{
+		ballot_paper::BallotPaper,
+		generic_domains::{AttendenceSheet, Candidate, Score, Voter},
+		scoreboard::Scoreboard,
+		voting_machine::VotingMachine,
+	},
+};
 use tokio::io::{self, AsyncBufReadExt, BufReader};
 
 pub async fn run_app(configuration: Configuration) -> anyhow::Result<()> {
 	let mut tableau_candidats = BTreeMap::new();
 
 	for candidates in configuration.candidates {
-		tableau_candidats.insert(candidates, 0u32);
+		let candidate = Candidate(candidates);
+		tableau_candidats.insert(candidate, Score::default());
 	}
-	tableau_candidats.insert("Nul".to_string(), 0u32);
-	tableau_candidats.insert("Blanc".to_string(), 0u32);
 
-	let mut tableau_votants = BTreeSet::new();
+	let scoreboard = Scoreboard {
+		scores: tableau_candidats,
+		blank_score: Score::default(),
+		invalid_score: Score::default(),
+	};
+
+	let voters = AttendenceSheet::default();
+
+	let mut voting_machine = VotingMachine::new(voters, scoreboard);
 
 	loop {
 		let mut lines = BufReader::new(io::stdin()).lines();
@@ -23,60 +38,42 @@ pub async fn run_app(configuration: Configuration) -> anyhow::Result<()> {
 			let troisieme_mot = mots.next().unwrap_or_default();
 			match premier_mot {
 				"voter" => {
-					let res = voter(
-						deuxieme_mot,
-						troisieme_mot,
-						&tableau_candidats,
-						&tableau_votants,
-					);
-					if !res.0.is_empty() && !res.1.is_empty() {
-						tableau_votants.insert(res.0);
-						if let Some(candidat) = tableau_candidats.get_mut(&res.1) {
-							*candidat += 1;
-						}
+					if !deuxieme_mot.is_empty() && !troisieme_mot.is_empty() {
+						let ballot_paper = BallotPaper {
+							voter: Voter(deuxieme_mot.to_string()),
+							candidate: Some(Candidate(troisieme_mot.to_string())),
+						};
+						voting_machine.vote(ballot_paper);
+					} else if !deuxieme_mot.is_empty() {
+						let ballot_paper = BallotPaper {
+							voter: Voter(deuxieme_mot.to_string()),
+							candidate: None,
+						};
+						voting_machine.vote(ballot_paper);
+					} else {
+						println!("Pas bien");
 					}
 				}
-				"votants" => afficher_votants(tableau_votants.clone()),
-				"scores" => afficher_score(tableau_candidats.clone()),
+				"votants" => afficher_votants(voting_machine.get_voter()),
+				"scores" => afficher_score(voting_machine.get_scoreboard()),
 				_ => println!("Commande invalide"),
 			}
 		}
 	}
 }
 
-fn voter(
-	deuxieme_mot: &str,
-	troisieme_mot: &str,
-	candidats: &BTreeMap<String, u32>,
-	votants: &BTreeSet<String>,
-) -> (String, String, u32) {
-	if deuxieme_mot.is_empty() {
-		println!("Erreur nom de votant manquant :\nvoter <nom_votant> <nom_candidat>.");
-	} else if votants.contains(deuxieme_mot) {
-		println!("{deuxieme_mot} a deja vote.");
-	} else if troisieme_mot.is_empty() {
-		println!("{deuxieme_mot} a voter blanc.");
-		return (deuxieme_mot.to_string(), "Blanc".to_string(), 1);
-	} else if candidats.contains_key(troisieme_mot) {
-		println!("{deuxieme_mot} a voter {troisieme_mot}.");
-		return (deuxieme_mot.to_string(), troisieme_mot.to_string(), 1);
-	} else {
-		println!("{deuxieme_mot} a voter nul.");
-		return (deuxieme_mot.to_string(), "Nul".to_string(), 1);
-	}
-	(String::new(), String::new(), 0)
-}
-
-fn afficher_score(scores: BTreeMap<String, u32>) {
+fn afficher_score(scores: &Scoreboard) {
 	println!("\nVoici les scores\n");
-	for (nom, score) in scores {
+	for (nom, score) in scores.scores.clone() {
 		println!("{nom}: {score}");
 	}
+	println!("Blanc: {}", scores.blank_score);
+	println!("Nul: {}", scores.invalid_score);
 }
 
-fn afficher_votants(votants: BTreeSet<String>) {
+fn afficher_votants(votants: &AttendenceSheet) {
 	println!("\nVoici les votants\n");
-	for votant in votants {
+	for votant in votants.0.clone() {
 		println!("{votant}");
 	}
 }
