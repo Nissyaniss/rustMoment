@@ -3,7 +3,7 @@ use super::{
 	vote_outcome::VoteOutcome,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VotingMachine {
 	voters: AttendenceSheet,
 	scoreboard: Scoreboard,

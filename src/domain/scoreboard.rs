@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use super::generic_domains::{Candidate, Score};
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Scoreboard {
 	pub scores: BTreeMap<Candidate, Score>,
 	pub blank_score: Score,

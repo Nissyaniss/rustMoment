@@ -27,7 +27,7 @@ impl Display for Score {
 	}
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct AttendenceSheet(pub BTreeSet<Voter>);
 
 impl Default for AttendenceSheet {
