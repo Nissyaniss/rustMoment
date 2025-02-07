@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, process::exit};
 
 use crate::{
-	configuration::Configuration,
+	configuration::{Configuration, StoredType},
 	domain::{
 		ballot_paper::BallotPaper,
 		generic_domains::{AttendenceSheet, Candidate, Score, Voter},
@@ -9,11 +9,18 @@ use crate::{
 		voting_machine::{self, VotingMachine},
 	},
 	storage::Storage,
-	storages::memory::MemoryStore,
+	storages::{file::FileStore, memory::MemoryStore},
 };
 use tokio::io::{self, AsyncBufReadExt, BufReader};
 
 pub async fn run_app(configuration: Configuration) -> anyhow::Result<()> {
+	match configuration.storage {
+		StoredType::File => handle_lines::<FileStore>(configuration).await,
+		StoredType::Memory => handle_lines::<MemoryStore>(configuration).await,
+	}
+}
+
+pub async fn handle_lines<Store: Storage>(configuration: Configuration) -> anyhow::Result<()> {
 	let mut tableau_candidats = BTreeMap::new();
 
 	for candidates in configuration.candidates {
@@ -31,7 +38,7 @@ pub async fn run_app(configuration: Configuration) -> anyhow::Result<()> {
 
 	let voting_machine = VotingMachine::new(voters, scoreboard);
 
-	let mut memory = match MemoryStore::new(voting_machine).await {
+	let mut memory = match Store::new(voting_machine).await {
 		Ok(memory) => memory,
 		Err(e) => {
 			println!("Error: {e}");
