@@ -11,7 +11,7 @@ use crate::{
 	storage::Storage,
 };
 
-struct MemoryStore {
+pub struct MemoryStore {
 	voting_machine: VotingMachine,
 }
 

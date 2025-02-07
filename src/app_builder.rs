@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, process::exit};
 
 use crate::{
 	configuration::Configuration,
@@ -6,8 +6,10 @@ use crate::{
 		ballot_paper::BallotPaper,
 		generic_domains::{AttendenceSheet, Candidate, Score, Voter},
 		scoreboard::Scoreboard,
-		voting_machine::VotingMachine,
+		voting_machine::{self, VotingMachine},
 	},
+	storage::Storage,
+	storages::memory::MemoryStore,
 };
 use tokio::io::{self, AsyncBufReadExt, BufReader};
 
@@ -27,9 +29,24 @@ pub async fn run_app(configuration: Configuration) -> anyhow::Result<()> {
 
 	let voters = AttendenceSheet::default();
 
-	let mut voting_machine = VotingMachine::new(voters, scoreboard);
+	let voting_machine = VotingMachine::new(voters, scoreboard);
+
+	let mut memory = match MemoryStore::new(voting_machine).await {
+		Ok(memory) => memory,
+		Err(e) => {
+			println!("Error: {e}");
+			exit(1)
+		}
+	};
 
 	loop {
+		let mut voting_machine = match memory.get_voting_machine().await {
+			Ok(voting_machine) => voting_machine,
+			Err(e) => {
+				println!("Error: {e}");
+				exit(1)
+			}
+		};
 		let mut lines = BufReader::new(io::stdin()).lines();
 		if let Some(line) = lines.next_line().await? {
 			let mut mots = line.split(' ');
@@ -57,6 +74,13 @@ pub async fn run_app(configuration: Configuration) -> anyhow::Result<()> {
 				"votants" => afficher_votants(voting_machine.get_voter()),
 				"scores" => afficher_score(voting_machine.get_scoreboard()),
 				_ => println!("Commande invalide"),
+			}
+		}
+		match memory.put_voting_machine(voting_machine).await {
+			Ok(()) => continue,
+			Err(e) => {
+				println!("Error {e}");
+				exit(1)
 			}
 		}
 	}
