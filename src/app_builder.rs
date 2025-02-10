@@ -6,7 +6,7 @@ use crate::{
 		ballot_paper::BallotPaper,
 		generic_domains::{AttendenceSheet, Candidate, Score, Voter},
 		scoreboard::Scoreboard,
-		voting_machine::{self, VotingMachine},
+		voting_machine::VotingMachine,
 	},
 	storage::Storage,
 	storages::{file::FileStore, memory::MemoryStore},

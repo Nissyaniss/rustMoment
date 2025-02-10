@@ -1,8 +1,5 @@
 use clap::Parser;
-use rustMoment::{
-	app_builder::{handle_lines, run_app},
-	configuration::{Configuration, StoredType},
-};
+use rust_moment::{app_builder::run_app, configuration::Configuration};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
