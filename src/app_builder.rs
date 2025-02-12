@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, process::exit};
+use std::collections::BTreeMap;
 
 use crate::{
 	configuration::{Configuration, StoredType},
@@ -13,6 +13,9 @@ use crate::{
 };
 use tokio::io::{self, AsyncBufReadExt, BufReader};
 
+/// # Errors
+///
+/// Will return `Err` if `handle_lines` exits with an error
 pub async fn run_app(configuration: Configuration) -> anyhow::Result<()> {
 	match configuration.storage {
 		StoredType::File => handle_lines::<FileStore>(configuration).await,
@@ -20,6 +23,9 @@ pub async fn run_app(configuration: Configuration) -> anyhow::Result<()> {
 	}
 }
 
+/// # Errors
+///
+/// Will return `Err` if `handle_lines` exits with an error
 pub async fn handle_lines<Store: Storage>(configuration: Configuration) -> anyhow::Result<()> {
 	let mut tableau_candidats = BTreeMap::new();
 
@@ -38,22 +44,11 @@ pub async fn handle_lines<Store: Storage>(configuration: Configuration) -> anyho
 
 	let voting_machine = VotingMachine::new(voters, scoreboard);
 
-	let mut memory = match Store::new(voting_machine).await {
-		Ok(memory) => memory,
-		Err(e) => {
-			println!("Error: {e}");
-			exit(1)
-		}
-	};
+	let mut memory = Store::new(voting_machine).await?;
 
 	loop {
-		let mut voting_machine = match memory.get_voting_machine().await {
-			Ok(voting_machine) => voting_machine,
-			Err(e) => {
-				println!("Error: {e}");
-				exit(1)
-			}
-		};
+		let mut voting_machine = memory.get_voting_machine().await?;
+		println!("{:?}", voting_machine);
 		let mut lines = BufReader::new(io::stdin()).lines();
 		if let Some(line) = lines.next_line().await? {
 			let mut mots = line.split(' ');
@@ -83,13 +78,7 @@ pub async fn handle_lines<Store: Storage>(configuration: Configuration) -> anyho
 				_ => println!("Commande invalide"),
 			}
 		}
-		match memory.put_voting_machine(voting_machine).await {
-			Ok(()) => continue,
-			Err(e) => {
-				println!("Error {e}");
-				exit(1)
-			}
-		}
+		memory.put_voting_machine(voting_machine).await?;
 	}
 }
 

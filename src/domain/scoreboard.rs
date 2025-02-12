@@ -10,6 +10,7 @@ pub struct Scoreboard {
 }
 
 impl Scoreboard {
+	#[must_use]
 	pub fn new(candidates: Vec<Candidate>) -> Self {
 		let mut scores: BTreeMap<Candidate, Score> = BTreeMap::default();
 		for candidate in candidates {

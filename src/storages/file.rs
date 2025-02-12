@@ -48,14 +48,14 @@ impl Storage for FileStore {
 		let mut file = File::open(self.filepath.clone()).await?;
 		let file_string = &mut Vec::new();
 		file.read_to_end(file_string).await?;
-		let mut deserializer = serde_json::Deserializer::from_slice(&file_string);
+		let mut deserializer = serde_json::Deserializer::from_slice(file_string);
 		Ok(VotingMachine::from(VotingMachineDAO::deserialize(
 			&mut deserializer,
 		)?))
 	}
 
 	async fn put_voting_machine(&mut self, machine: VotingMachine) -> anyhow::Result<()> {
-		let mut file = File::open(self.filepath.clone()).await?;
+		let mut file = File::create(self.filepath.clone()).await?;
 		let voting_machine_json = serde_json::to_string(&VotingMachineDAO::from(machine))?;
 		file.write_all(voting_machine_json.as_bytes()).await?;
 		Ok(())
@@ -145,7 +145,7 @@ async fn my_test() {
 
 	let voting_machine = VotingMachine::new(voters, scoreboard);
 
-	let store = FileStore::new(voting_machine.clone()).await;
+	let store = FileStore::create(voting_machine.clone(), "test.json").await;
 
 	let stored_machine = store.unwrap().get_voting_machine().await.unwrap();
 
@@ -168,8 +168,8 @@ async fn my_test2() {
 
 	let voting_machine = VotingMachine::new(voters, scoreboard);
 
-	let store = FileStore::new(voting_machine.clone()).await;
-	let store2 = FileStore::new(voting_machine.clone()).await;
+	let store = FileStore::create(voting_machine.clone(), "test.json").await;
+	let store2 = FileStore::create(voting_machine.clone(), "test.json").await;
 
 	let stored_machine = store.unwrap().get_voting_machine().await.unwrap();
 	let stored_machine2 = store2.unwrap().get_voting_machine().await.unwrap();
