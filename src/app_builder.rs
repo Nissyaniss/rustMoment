@@ -10,6 +10,7 @@ use crate::{
 	},
 	storage::Storage,
 	storages::{file::FileStore, memory::MemoryStore},
+	use_cases::VotingController,
 };
 use tokio::io::{self, AsyncBufReadExt, BufReader};
 
@@ -44,11 +45,11 @@ pub async fn handle_lines<Store: Storage>(configuration: Configuration) -> anyho
 
 	let voting_machine = VotingMachine::new(voters, scoreboard);
 
-	let mut memory = Store::new(voting_machine).await?;
+	let memory = Store::new(voting_machine).await?;
+	let mut controller = VotingController::new(memory);
 
 	loop {
-		let mut voting_machine = memory.get_voting_machine().await?;
-		println!("{:?}", voting_machine);
+		let voting_machine = controller.get_voting_machine().await?;
 		let mut lines = BufReader::new(io::stdin()).lines();
 		if let Some(line) = lines.next_line().await? {
 			let mut mots = line.split(' ');
@@ -62,13 +63,13 @@ pub async fn handle_lines<Store: Storage>(configuration: Configuration) -> anyho
 							voter: Voter(deuxieme_mot.to_string()),
 							candidate: Some(Candidate(troisieme_mot.to_string())),
 						};
-						voting_machine.vote(ballot_paper);
+						controller.vote(ballot_paper.into()).await?;
 					} else if !deuxieme_mot.is_empty() {
 						let ballot_paper = BallotPaper {
 							voter: Voter(deuxieme_mot.to_string()),
 							candidate: None,
 						};
-						voting_machine.vote(ballot_paper);
+						controller.vote(ballot_paper.into()).await?;
 					} else {
 						println!("Pas bien");
 					}
@@ -78,7 +79,6 @@ pub async fn handle_lines<Store: Storage>(configuration: Configuration) -> anyho
 				_ => println!("Commande invalide"),
 			}
 		}
-		memory.put_voting_machine(voting_machine).await?;
 	}
 }
 
