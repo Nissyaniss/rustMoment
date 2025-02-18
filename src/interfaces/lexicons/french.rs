@@ -1,7 +1,7 @@
 use crate::interfaces::lexicon::Lexicon;
 
 impl Lexicon {
-	pub fn french() -> Self {
+	pub const fn french() -> Self {
 		Self {
 			blank_vote: "a voter blanc.",
 			has_already_voted: "a deja voter.",
