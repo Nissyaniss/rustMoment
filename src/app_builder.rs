@@ -7,12 +7,13 @@ use crate::{
 		scoreboard::Scoreboard,
 		voting_machine::VotingMachine,
 	},
-	interfaces::{cli_interfaces::handle_line, lexicon::Lexicon},
+	interfaces::lexicon::Lexicon,
+	service::Service,
+	services::stdio::StdioService,
 	storage::Storage,
 	storages::{file::FileStore, memory::MemoryStore},
 	use_cases::VotingController,
 };
-use tokio::io::{self, AsyncBufReadExt, BufReader};
 
 /// # Errors
 ///
@@ -27,7 +28,9 @@ pub async fn run_app(configuration: Configuration) -> anyhow::Result<()> {
 /// # Errors
 ///
 /// Will return `Err` if `handle_lines` exits with an error
-pub async fn handle_lines<Store: Storage>(configuration: Configuration) -> anyhow::Result<()> {
+pub async fn handle_lines<Store: Storage + Send + Sync>(
+	configuration: Configuration,
+) -> anyhow::Result<()> {
 	let mut tableau_candidats = BTreeMap::new();
 
 	for candidates in configuration.candidates {
@@ -51,12 +54,9 @@ pub async fn handle_lines<Store: Storage>(configuration: Configuration) -> anyho
 	let voting_machine = VotingMachine::new(voters, scoreboard);
 
 	let memory = Store::new(voting_machine).await?;
-	let mut controller = VotingController::new(memory);
+	let controller = VotingController::new(memory);
 
-	loop {
-		let mut lines = BufReader::new(io::stdin()).lines();
-		if let Some(line) = lines.next_line().await? {
-			println!("{}", handle_line(&line, &mut controller, &lexicon).await?);
-		}
-	}
+	let mut stdio_service = StdioService::new(0, lexicon, controller);
+
+	stdio_service.serve().await
 }
