@@ -2,6 +2,7 @@ use async_trait::async_trait;
 
 use crate::{domain::voting_machine::VotingMachine, storage::Storage};
 
+#[derive(Clone)]
 pub struct MemoryStore {
 	voting_machine: VotingMachine,
 }

@@ -6,6 +6,7 @@ use crate::domain::voting_machine::VotingMachine;
 pub trait Storage
 where
 	Self: Sized,
+	Self: Clone,
 {
 	async fn new(machine: VotingMachine) -> anyhow::Result<Self>;
 	async fn get_voting_machine(&self) -> anyhow::Result<VotingMachine>;

@@ -10,7 +10,7 @@ impl Lexicon {
 			voters: "voters",
 			vote: "vote",
 			scores: "scores",
-			invalid_command: "Invalid command",
+			invalid_command: "Invalid command\n",
 			scores_title: "Scores:\n",
 			voters_title: "Voters:\n",
 			blank: "Blank",

@@ -1,4 +1,7 @@
+use std::sync::Arc;
+
 use serde::Deserialize;
+use tokio::sync::RwLock;
 
 use crate::{
 	domain::{
@@ -46,25 +49,31 @@ impl From<VoteForm> for BallotPaper {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Clone)]
 pub struct VotingController<Store> {
-	store: Store,
+	store: Arc<RwLock<Store>>,
 }
 
-impl<Store: Storage> VotingController<Store> {
-	pub const fn new(store: Store) -> Self {
-		Self { store }
+impl<Store: Storage + Clone> VotingController<Store> {
+	pub fn new(store: Store) -> Self {
+		Self {
+			store: Arc::new(RwLock::new(store)),
+		}
 	}
 
-	pub async fn vote(&mut self, vote_forme: VoteForm) -> anyhow::Result<VoteOutcome> {
-		let mut voting_machine = self.store.get_voting_machine().await?;
+	pub async fn vote(self, vote_forme: VoteForm) -> anyhow::Result<VoteOutcome> {
+		let mut voting_machine = self.store.read().await.get_voting_machine().await?;
 		let outcome = voting_machine.vote(vote_forme.into());
-		self.store.put_voting_machine(voting_machine).await?;
+		self.store
+			.write()
+			.await
+			.put_voting_machine(voting_machine)
+			.await?;
 		Ok(outcome)
 	}
 
 	pub async fn get_voting_machine(&self) -> anyhow::Result<VotingMachine> {
-		self.store.get_voting_machine().await
+		self.store.read().await.get_voting_machine().await
 	}
 }
 
@@ -108,10 +117,10 @@ mod tests {
 				exit(1)
 			}
 		};
-		let mut controller = VotingController::new(memory);
+		let controller = VotingController::new(memory);
 		let voter = Voter("Malo".to_string());
 		let ballot_paper = BallotPaper::new(voter.clone(), Some(candidate.clone()));
-		let outcome = match controller.vote(ballot_paper.into()).await {
+		let outcome = match controller.clone().vote(ballot_paper.into()).await {
 			Ok(outcome) => outcome,
 			Err(e) => {
 				println!("error : {e}");
@@ -165,9 +174,9 @@ mod tests {
 				exit(1)
 			}
 		};
-		let mut controller = VotingController::new(memory);
+		let controller = VotingController::new(memory);
 		let ballot_paper = BallotPaper::new(voter.clone(), Some(candidate.clone()));
-		let outcome = match controller.vote(ballot_paper.into()).await {
+		let outcome = match controller.clone().vote(ballot_paper.into()).await {
 			Ok(outcome) => outcome,
 			Err(e) => {
 				println!("error : {e}");
@@ -219,9 +228,9 @@ mod tests {
 				exit(1)
 			}
 		};
-		let mut controller = VotingController::new(memory);
+		let controller = VotingController::new(memory);
 		let ballot_paper = BallotPaper::new(voter.clone(), Some(candidate.clone()));
-		let outcome = match controller.vote(ballot_paper.into()).await {
+		let outcome = match controller.clone().vote(ballot_paper.into()).await {
 			Ok(outcome) => outcome,
 			Err(e) => {
 				println!("error : {e}");
@@ -273,9 +282,9 @@ mod tests {
 				exit(1)
 			}
 		};
-		let mut controller = VotingController::new(memory);
+		let controller = VotingController::new(memory);
 		let ballot_paper = BallotPaper::new(voter.clone(), None);
-		let outcome = match controller.vote(ballot_paper.into()).await {
+		let outcome = match controller.clone().vote(ballot_paper.into()).await {
 			Ok(outcome) => outcome,
 			Err(e) => {
 				println!("error : {e}");

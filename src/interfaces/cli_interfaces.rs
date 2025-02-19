@@ -38,7 +38,7 @@ fn show_vote_outcome(outcome: VoteOutcome, lexicon: &Lexicon) -> String {
 
 pub async fn handle_line<Store: Storage>(
 	line: &str,
-	controller: &mut VotingController<Store>,
+	controller: VotingController<Store>,
 	lexicon: &Lexicon,
 ) -> anyhow::Result<String> {
 	let voting_machine = controller.get_voting_machine().await?;
@@ -52,13 +52,13 @@ pub async fn handle_line<Store: Storage>(
 				voter: Voter(deuxieme_mot.to_string()),
 				candidate: Some(Candidate(troisieme_mot.to_string())),
 			};
-			show_vote_outcome(controller.vote(ballot_paper.into()).await?, lexicon)
+			show_vote_outcome(controller.clone().vote(ballot_paper.into()).await?, lexicon)
 		} else if !deuxieme_mot.is_empty() {
 			let ballot_paper = BallotPaper {
 				voter: Voter(deuxieme_mot.to_string()),
 				candidate: None,
 			};
-			show_vote_outcome(controller.vote(ballot_paper.into()).await?, lexicon)
+			show_vote_outcome(controller.clone().vote(ballot_paper.into()).await?, lexicon)
 		} else {
 			lexicon.candidate_missing.to_string()
 		}
@@ -112,7 +112,7 @@ mod tests {
 
 		assert_eq!(
 			"Aide :\n - voter <nom> [candidat]\n - scores\n - votants".to_string(),
-			handle_line("", &mut controller, &lexicon).await.unwrap()
+			handle_line("", controller, &lexicon).await.unwrap()
 		);
 	}
 
@@ -138,9 +138,7 @@ mod tests {
 
 		assert_eq!(
 			"Voici les votants:\n".to_string(),
-			handle_line("votants", &mut controller, &lexicon)
-				.await
-				.unwrap()
+			handle_line("votants", controller, &lexicon).await.unwrap()
 		);
 	}
 
@@ -166,9 +164,7 @@ mod tests {
 
 		assert_eq!(
 			"Voici les scores:\nYay: 0\nBlanc: 0\nNull: 0".to_string(),
-			handle_line("scores", &mut controller, &lexicon)
-				.await
-				.unwrap()
+			handle_line("scores", controller, &lexicon).await.unwrap()
 		);
 	}
 
@@ -194,7 +190,7 @@ mod tests {
 
 		assert_eq!(
 			"moi a voter pour MacOS.".to_string(),
-			handle_line("voter moi MacOS", &mut controller, &lexicon)
+			handle_line("voter moi MacOS", controller, &lexicon)
 				.await
 				.unwrap()
 		);
@@ -222,7 +218,7 @@ mod tests {
 
 		assert_eq!(
 			"moi a voter blanc.".to_string(),
-			handle_line("voter moi", &mut controller, &lexicon)
+			handle_line("voter moi", controller, &lexicon)
 				.await
 				.unwrap()
 		);
@@ -250,9 +246,7 @@ mod tests {
 
 		assert_eq!(
 			"Il manque un votant.".to_string(),
-			handle_line("voter", &mut controller, &lexicon)
-				.await
-				.unwrap()
+			handle_line("voter", controller, &lexicon).await.unwrap()
 		);
 	}
 
@@ -278,9 +272,7 @@ mod tests {
 
 		assert_eq!(
 			"Commande non valide".to_string(),
-			handle_line("zxdfsdf", &mut controller, &lexicon)
-				.await
-				.unwrap()
+			handle_line("zxdfsdf", controller, &lexicon).await.unwrap()
 		);
 	}
 }

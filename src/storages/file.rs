@@ -19,6 +19,7 @@ use crate::{
 	storage::Storage,
 };
 
+#[derive(Clone)]
 pub struct FileStore {
 	filepath: String,
 }

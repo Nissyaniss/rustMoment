@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::{
-	configuration::{Configuration, LanguageType, StoredType},
+	configuration::{Configuration, LanguageType, ServiceType, StoredType},
 	domain::{
 		generic_domains::{AttendenceSheet, Candidate, Score},
 		scoreboard::Scoreboard,
@@ -9,7 +9,7 @@ use crate::{
 	},
 	interfaces::lexicon::Lexicon,
 	service::Service,
-	services::stdio::StdioService,
+	services::{stdio::StdioService, tcp::TcpService, udp::UdpService},
 	storage::Storage,
 	storages::{file::FileStore, memory::MemoryStore},
 	use_cases::VotingController,
@@ -20,15 +20,25 @@ use crate::{
 /// Will return `Err` if `handle_lines` exits with an error
 pub async fn run_app(configuration: Configuration) -> anyhow::Result<()> {
 	match configuration.storage {
-		StoredType::File => handle_lines::<FileStore>(configuration).await,
-		StoredType::Memory => handle_lines::<MemoryStore>(configuration).await,
+		StoredType::File => dispatch_service::<FileStore>(configuration).await,
+		StoredType::Memory => dispatch_service::<MemoryStore>(configuration).await,
+	}
+}
+
+pub async fn dispatch_service<Store: Storage + Send + Sync + Clone + 'static>(
+	configuration: Configuration,
+) -> anyhow::Result<()> {
+	match configuration.service {
+		ServiceType::Stdio => handle_lines::<Store, StdioService<Store>>(configuration).await,
+		ServiceType::Udp => handle_lines::<Store, UdpService<Store>>(configuration).await,
+		ServiceType::Tcp => handle_lines::<Store, TcpService<Store>>(configuration).await,
 	}
 }
 
 /// # Errors
 ///
-/// Will return `Err` if `handle_lines` exits with an error
-pub async fn handle_lines<Store: Storage + Send + Sync>(
+/// Will return `Err` if `handle_line` exits with an error
+pub async fn handle_lines<Store: Storage, Serv: Service<Store>>(
 	configuration: Configuration,
 ) -> anyhow::Result<()> {
 	let mut tableau_candidats = BTreeMap::new();
@@ -56,7 +66,7 @@ pub async fn handle_lines<Store: Storage + Send + Sync>(
 	let memory = Store::new(voting_machine).await?;
 	let controller = VotingController::new(memory);
 
-	let mut stdio_service = StdioService::new(0, lexicon, controller);
-
-	stdio_service.serve().await
+	Serv::new(configuration.port, lexicon, controller)
+		.serve()
+		.await
 }

@@ -12,7 +12,7 @@ impl Lexicon {
 			scores: "scores",
 			blank: "Blanc",
 			invalid: "Null",
-			invalid_command: "Commande non valide",
+			invalid_command: "Commande non valide\n",
 			scores_title: "Voici les scores:\n",
 			voters_title: "Voici les votants:\n",
 			help: "Aide :\n - voter <nom> [candidat]\n - scores\n - votants",
