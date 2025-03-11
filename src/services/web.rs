@@ -1,4 +1,4 @@
-use std::net::SocketAddr;
+use std::{fmt::format, net::SocketAddr};
 
 use async_trait::async_trait;
 use axum::Router;
@@ -15,7 +15,10 @@ pub struct WebService {
 #[async_trait]
 impl<Store: Storage + Send + Sync + Clone + 'static> Service<Store> for WebService {
 	fn new(port: u16, lexicon: Lexicon, controller: VotingController<Store>) -> Self {
-		todo!();
+		Self {
+			address: format!("127.0.0.1:{}", port).parse().unwrap(),
+			router: Router::new(),
+		}
 	}
 
 	async fn serve(self) -> Result<(), anyhow::Error> {

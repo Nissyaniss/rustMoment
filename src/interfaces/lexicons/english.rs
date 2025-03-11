@@ -17,6 +17,12 @@ impl Lexicon {
 			invalid: "Invalid",
 			help: "Help :\n - vote <name> [candidate]\n - scores\n - voters",
 			candidate_missing: "Voter missing.",
+			vote_machine: "Voting Machine",
+			urn: "Urn",
+			voter: "Voter",
+			candidate: "Candidate",
+			Scores: "Scores",
+			Voters: "Voters",
 		}
 	}
 }

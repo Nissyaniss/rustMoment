@@ -1,5 +1,11 @@
 #[derive(PartialEq, Eq, Clone)]
 pub struct Lexicon {
+	pub Voters: &'static str,
+	pub Scores: &'static str,
+	pub candidate: &'static str,
+	pub voter: &'static str,
+	pub vote_machine: &'static str,
+	pub urn: &'static str,
 	pub blank_vote: &'static str,
 	pub has_already_voted: &'static str,
 	pub accepted_vote: &'static str,

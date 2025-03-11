@@ -23,6 +23,7 @@ pub enum ServiceType {
 	Stdio,
 	Udp,
 	Tcp,
+	Web,
 }
 
 #[derive(Clone, Copy, ValueEnum, Debug)]

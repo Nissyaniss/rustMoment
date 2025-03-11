@@ -9,7 +9,7 @@ use crate::{
 	},
 	interfaces::lexicon::Lexicon,
 	service::Service,
-	services::{stdio::StdioService, tcp::TcpService, udp::UdpService},
+	services::{stdio::StdioService, tcp::TcpService, udp::UdpService, web::WebService},
 	storage::Storage,
 	storages::{file::FileStore, memory::MemoryStore},
 	use_cases::VotingController,
@@ -32,6 +32,7 @@ pub async fn dispatch_service<Store: Storage + Send + Sync + Clone + 'static>(
 		ServiceType::Stdio => handle_lines::<Store, StdioService<Store>>(configuration).await,
 		ServiceType::Udp => handle_lines::<Store, UdpService<Store>>(configuration).await,
 		ServiceType::Tcp => handle_lines::<Store, TcpService<Store>>(configuration).await,
+		ServiceType::Web => handle_lines::<Store, WebService>(configuration).await,
 	}
 }
 

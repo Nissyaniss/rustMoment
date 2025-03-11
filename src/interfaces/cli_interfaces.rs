@@ -1,4 +1,5 @@
 use super::lexicon::Lexicon;
+use super::show_vote_outcome;
 use crate::domain::ballot_paper::BallotPaper;
 use crate::domain::generic_domains::AttendenceSheet;
 use crate::domain::generic_domains::Candidate;
@@ -23,17 +24,6 @@ fn show_scoreboard(scores: &Scoreboard, lexicon: &Lexicon) -> String {
 	res += &format!("{}: {}\n", lexicon.blank, scores.blank_score);
 	res += &format!("{}: {}", lexicon.invalid, scores.invalid_score);
 	res
-}
-
-fn show_vote_outcome(outcome: VoteOutcome, lexicon: &Lexicon) -> String {
-	match outcome {
-		VoteOutcome::AcceptedVote(voter, candidate) => {
-			format!("{voter} {} {candidate}.", lexicon.accepted_vote)
-		}
-		VoteOutcome::BlankVote(voter) => format!("{voter} {}", lexicon.blank_vote),
-		VoteOutcome::InvalidVote(voter) => format!("{voter} {}", lexicon.invalid_vote),
-		VoteOutcome::HasAlreadyVoted(voter) => format!("{voter} {}", lexicon.has_already_voted),
-	}
 }
 
 pub async fn handle_line<Store: Storage>(

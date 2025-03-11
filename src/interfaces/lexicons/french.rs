@@ -17,6 +17,12 @@ impl Lexicon {
 			voters_title: "Voici les votants:\n",
 			help: "Aide :\n - voter <nom> [candidat]\n - scores\n - votants",
 			candidate_missing: "Il manque un votant.",
+			vote_machine: "Machine de vote",
+			urn: "Urne",
+			voter: "Votant",
+			candidate: "Candidat",
+			Scores: "Scores",
+			Voters: "Votants",
 		}
 	}
 }
